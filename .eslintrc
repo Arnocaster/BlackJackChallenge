@@ -3,10 +3,12 @@
       "browser": true,
       "es6": true
     },
+    "globals": {
+      //"app": true, <= Mettre ici le nom du module pour qu'il soit validé par eslint
+
+    },
     "extends": "eslint:recommended",
     "rules": {
-      "no-unused-vars": "off",
-      "no-undef": "off",
       "indent": ["error", 4, {"SwitchCase": 1}],
       "quotes": ["error", "single"],
       "semi": ["error", "always"]
