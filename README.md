@@ -69,6 +69,11 @@ De manière générale, lors d'une séparation de deux cartes, il n'est pas poss
       1. **Si le croupier fait Blackjack**, il reçoit le double de son assurance (et pert sa mise sauf si le joueur à également Blackjack, auquel cas, il récupère sa mise) ;
       2. **Si le croupier ne fait pas Blackjack**, le joueur perd son assurance et le jeu reprend normalement.
 
+###Service du croupier
+Une fois tous les joueurs servis, le croupier joue pour son compte selon une règle universelle : « la banque tire à 16, reste à 17 ». Ainsi, le croupier tire des cartes jusqu'à atteindre un nombre supérieur ou égal à 177.
+
+Dans le cas où le croupier à un « 17 soft », c'est-à-dire, un As et un sept (valant soit 8 points, soit 18 points), la règle la plus commune est le « stand on soft 17 ». Le croupier s'arrête donc à 17. Cependant, certains casinos pratiquent la règle du « hit on soft 17 ». Le croupier tire alors une nouvelle carte, donnant un léger avantage au casino. Dans le cas d'un « 18 soft », et au delà, le croupier s'arrête dans tous les cas8.
+
 ### Fin de la partie
 - Soit le joueur sort car il le souhaite.
 - Soit le joueur est ruiné.
