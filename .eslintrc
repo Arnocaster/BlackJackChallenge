@@ -4,8 +4,8 @@
       "es6": true
     },
     "globals": {
-      //"app": true, <= Mettre ici le nom du module pour qu'il soit validé par eslint
-
+      "gameEngine": true,
+      "graphicEngine" : true,
     },
     "extends": "eslint:recommended",
     "rules": {
