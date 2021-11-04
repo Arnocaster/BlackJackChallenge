@@ -168,6 +168,9 @@ const cardGame = {
     },
     //FONCTION : PIOCHE UNE OU PLUSIEURS CARTE DANS UN JEU
     pickCard : function(numberOfCard,personToGive,cardGameElt){
+        if (cardGame.thisParty.cardSet.length === 0){
+            this.createCardSet();
+        }
         let thisCard = cardGameElt.splice(0,1);
         //console.log('pickcard', personToGive);
         personToGive.push(thisCard[0]);     
