@@ -12,7 +12,6 @@ const cardGame = {
     },
     thisParty : {
         cardSet : [],
-        playerToPlay : true,
         isGameOver : false,
         player :{
             name : 'Player',
@@ -31,12 +30,22 @@ const cardGame = {
     //FONCTION D'INITIALISATION
     init : function(){
         cardGame.createCardSet();
+        cardGame.newGame();
+    },
+    newGame : function(){
         
+
+        console.log("Une nouvelle partie commence!")
         let thisParty = cardGame.thisParty;
         let player = thisParty.player;
         let dealer = thisParty.dealer;
         let cardSet = cardGame.thisParty.cardSet;
         let players = [thisParty.player,thisParty.dealer];
+        player.bet = 0;
+        player.cards = [];
+        dealer.cards = [];
+        player.actualScore = 0;
+        dealer.actualScore = 0;
         //Le joueur parie
         cardGame.playerBet();
         //Le croupier distribue une carte face visible a chaque joueur et une pour lui à la fin
@@ -59,19 +68,6 @@ const cardGame = {
       
         cardGame.playerTurn();
  
-
-        //Si le joueur a un blackjack alors il ne fait rien, le croupier joue
-        //Si le joueur n'as pas de blackjack
-        //-->Il peut demander une ou plusieurs cartes supplémnetaires
-        //-->S'arréter et laisser le dealer jouer
-        //-->Doubler sa mise mais il ne peut tirer qu'une carte et ne peux plus jouer.
-        //-->Splitter SSI il a deux cartes de même valeur : chaque carte devient un jeux à part entière pour lequel il peut agir indépendement.
-        //Mais il ne peut plus faire de blackjack => Si le croupier a un blackjack  le joueur perd
-        //-->Assurance : si la première carte du croupier est un as le joueur peut s'assurer : Il paye la moitié de sa mise Soit le croupier fait blackjack => 
-        // //***TOUR DU DEALER
-        //Si le dealer < 17 alors il tire
-        //Si le dealer a As + 7 (=18) il s'arrete
-        //Sinon il s'arrete
 
     },
     //FONCTION : CREE UN JEUX & MELANGE LES CARTES 
@@ -133,7 +129,7 @@ const cardGame = {
                     cardGamesCollection[0] = cardGamesCollection[0].concat(cardGamesCollection[i]);
                 }
                 cardGamesCollection = cardGamesCollection[0];
-         
+                console.log('Un nouveau jeux a été mélangé et mis sur la table');
             }
 
        
@@ -244,7 +240,6 @@ const cardGame = {
         let player = thisParty.player;
         //Si le joueur a 21 il s'arrete automatiquement
         if (player.actualScore === 21) {
-            thisParty.playerToPlay = false;
             cardGame.dealerTurn();
         } else {
             //Sinon on lui propose de jouer
@@ -266,7 +261,6 @@ const cardGame = {
                     break;
                 case 2 : 
                     //Le joueur s'arrete c'est au tour du dealer
-                    thisParty.playerToPlay = false;
                     cardGame.dealerTurn();
                     break;
                 //Si ce n'est pas un de ces 4 cas
@@ -312,10 +306,13 @@ const cardGame = {
         let playerPrize = 0;
         //debugger;
         //Si le joueur a dépassé 21 OU un score inferieur au dealer il a perdu
-        if (playerScore > 21 || playerScore < dealerScore && dealerScore < 21){
+        if (playerScore > 21 || playerScore < dealerScore && dealerScore <= 21){
             winner = thisParty.dealer;
             looser = thisParty.player;
             playerPrize = 0;
+
+            let recette = playerPrize - playerBet;
+            cardGame.dialogs('winnerLooser',winner,looser,recette);
             //Si le dealer a dépassé 21 && que le joueur n'a pas dépassé OU que le score du dealer est inferieur à celui du joueur le dealer a perdu
         } else if (dealerScore > 21 && playerScore <= 21 || dealerScore < playerScore){
             winner = thisParty.player;
@@ -323,24 +320,40 @@ const cardGame = {
             //si le joueur a un blackjack il gagne pour un ratio de 3:2 (mise *(2+3)/2) ou indice 2.5
             if (playerScore === 21){
                 playerPrize = (playerBet * 5)/2;
-                playerMoney += playerPrize;
+                thisParty.player.money += playerPrize;
+                thisParty.dealer.money -= playerPrize;
             } else {
                 //Si le joueur gagne simplement le casino verse 1:1 c'est a dire 2 fois sa mise dont sa mise de départ soit 2x sa mise
                 playerPrize = playerBet * 2;
-                playerMoney += playerPrize;
-                dealerMoney -= playerPrize;
+                thisParty.player.money += playerPrize;
+                thisParty.dealer.money -= playerPrize;
             }
+            let recette = playerPrize - playerBet;
+            cardGame.dialogs('winnerLooser',winner,looser,recette);
         } else {
+            winner = thisParty.player;
+            looser = thisParty.dealer;
             //sinon égalité et aucun dépassement le joueur récupère sa mise
             playerPrize = playerBet;
-            playerMoney += playerPrize;
-            dealerMoney -= playerPrize;
+            thisParty.player.money += playerPrize;
+            thisParty.dealer.money -= playerPrize;
+            let recette = playerPrize - playerBet;
+            cardGame.dialogs('equal',winner,looser,recette);
         }
-
-        let recette = playerPrize - playerBet;
-        console.log(`${looser.name} a perdu (${looser.actualScore}), c'est ${winner.name} qui remporte la partie!`);
-        console.log(`Il vous reste ${playerMoney}$ votre recette est de ${recette}$`);
-        playerBet = 0;
+        cardGame.newGame();
+    },
+    dialogs : function(type,winner,looser,recette){
+        switch(type){
+            case 'winnerLooser' :
+                console.log(`${looser.name} a perdu (${looser.actualScore}), c'est ${winner.name}(${winner.actualScore}) qui remporte la partie!`);
+                console.log(`Vous avez ${cardGame.thisParty.player.money}$ votre recette est de ${recette}$`);
+                break;
+            case 'equal' : 
+                console.log(`Egalité ${winner.name} rempoche sa mise (${recette}, il lui reste ${winner.money})`);
+                break;
+            default : 
+                console.log('Erreur il n\'y a pas de vainqueur ou d\'égalité ');
+        }
     },
 };
 
