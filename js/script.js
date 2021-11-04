@@ -7,6 +7,8 @@ const cardGame = {
         joker : false,
         cardGamesQuantity : 6,
         minLastSplit : 52,
+        minBet : 25,
+        maxBet : 50,
     },
     thisParty : {
         cardSet : [],
@@ -17,6 +19,7 @@ const cardGame = {
             cards : [],
             actualScore : 0,
             money : 500,
+            bet : 0,
         },
         dealer : {
             name : 'Dealer',         
@@ -34,6 +37,8 @@ const cardGame = {
         let dealer = thisParty.dealer;
         let cardSet = cardGame.thisParty.cardSet;
         let players = [thisParty.player,thisParty.dealer];
+        //Le joueur parie
+        cardGame.playerBet();
         //Le croupier distribue une carte face visible a chaque joueur et une pour lui à la fin
         players.forEach(function(element){
             cardGame.pickCard(1,element.cards,cardSet);
@@ -43,8 +48,7 @@ const cardGame = {
         players.forEach(function(element){
             cardGame.pickCard(1,element.cards,cardSet);
         });
-        cardGame.calculateScore();  
-        cardGame.isGameOver();
+        cardGame.calculateScore();
 
         // //Affichage des cartes tirées
         players.forEach(function(element){
@@ -52,10 +56,8 @@ const cardGame = {
         });
         //A deux le croupier demande alors quelle action le joueur veut faire
         // //***TOUR DU JOUEUR
+      
         cardGame.playerTurn();
-        cardGame.dealerTurn();
-        cardGame.playerTurn();
-        cardGame.dealerTurn();
  
 
         //Si le joueur a un blackjack alors il ne fait rien, le croupier joue
@@ -197,6 +199,10 @@ const cardGame = {
             cardsToShow += `${element.color}${thisValue}|`;          
         });
         cardsToShow += `(${handOfCards.actualScore})`;
+        //Affiche Paris et argent restant
+        if (handOfCards.name !== 'Dealer'){
+            cardsToShow += ` [Bet: ${cardGame.thisParty.player.bet}$ (Money : ${cardGame.thisParty.player.money})]`;
+        }
         console.log(cardsToShow);
     },
     //FONCTION : Calcule le score des deux mains actuelles et mets à jour les valeurs
@@ -217,58 +223,124 @@ const cardGame = {
             });
         });
     },
+    //FONCTION : Calcule les gains du joueur
+    calculatePrize : function(){
+
+    },
+    playerBet : function (){
+        let playerBet = Number(prompt(`Combien voulez vous parier (Min :${cardGame.globalSettings.minBet}$, Max : ${cardGame.globalSettings.maxBet}$)?`));
+        if(playerBet >= cardGame.globalSettings.minBet 
+                     && playerBet <= cardGame.globalSettings.maxBet 
+                     && playerBet <= cardGame.thisParty.player.money){
+            cardGame.thisParty.player.money -= playerBet;
+            cardGame.thisParty.player.bet = playerBet;
+            cardGame.thisParty.dealer.money += playerBet;
+            return;
+        } else (cardGame.playerBet());
+    },
     //FONCTION : MECANIQUE DE JEU DU JOUEUR 
     playerTurn : function(){
         let thisParty = cardGame.thisParty;
         let player = thisParty.player;
-        let playerAction = Number(prompt('Que voulez vous faire?\n 1)Tirer une carte 2)S\'arréter 3)Doubler 4)Spliter'));
-        switch (playerAction){
-            case 1 : 
-                cardGame.pickCard(1,player.cards,thisParty.cardSet);
-                cardGame.calculateScore();  
-                cardGame.displayHandOfCards(player);
-                cardGame.isGameOver();
-                break;
-            default : 'défaut';
+        //Si le joueur a 21 il s'arrete automatiquement
+        if (player.actualScore === 21) {
+            thisParty.playerToPlay = false;
+            cardGame.dealerTurn();
+        } else {
+            //Sinon on lui propose de jouer
+            let playerAction = Number(prompt('Que voulez vous faire?\n 1)Tirer une carte 2)S\'arréter 3)Doubler 4)Spliter'));
+
+            switch (playerAction){
+                //Le joueur tire
+                case 1 : 
+                    cardGame.pickCard(1,player.cards,thisParty.cardSet);
+                    cardGame.calculateScore();  
+                    cardGame.displayHandOfCards(player);
+                    //Si son score n'a pas dépassé 21 il peut rejouer
+                    if (player.actualScore < 21){
+                        cardGame.playerTurn();
+                    //Sinon c'est le tour du dealer
+                    } else {
+                        cardGame.dealerTurn();
+                    }
+                    break;
+                case 2 : 
+                    //Le joueur s'arrete c'est au tour du dealer
+                    thisParty.playerToPlay = false;
+                    cardGame.dealerTurn();
+                    break;
+                //Si ce n'est pas un de ces 4 cas
+                default : cardGame.playerTurn();
+            }
         }
+       
     },
+
+    //A retravailler
     dealerTurn : function(){
         let thisParty = cardGame.thisParty;
         let dealer = thisParty.dealer;
-        //Si le dealer a deux cartes && As + 7 ou inversement
-        if(dealer.cards.length < 3 && dealer.cards[0] === 1 && dealer.cards[1] === 7
-            ||dealer.cards.length < 3 && dealer.cards[0] === 7 && dealer.cards[1] === 1){
-            return;
-        } else if (dealer.actualScore < 17){
+        //Si le dealer a deux cartes && As + 7 ou inversement, il reste.
+        // if(dealer.cards.length < 3 && dealer.cards[0] === 1 && dealer.cards[1] === 7
+        //     ||dealer.cards.length < 3 && dealer.cards[0] === 7 && dealer.cards[1] === 1){
+        //     cardGame.isGameOver();
+        //     return;
+        if (dealer.actualScore <= 17){
             cardGame.pickCard(1,dealer.cards,thisParty.cardSet);
             cardGame.calculateScore();  
             cardGame.displayHandOfCards(dealer);
-            cardGame.isGameOver();
+            if (dealer.actualScore < 17) {
+                cardGame.dealerTurn();
+            } else {
+                cardGame.isGameOver();
+            }
         } else {
-            return;
+            cardGame.isGameOver();
         }
-
+         
     },
     //FONCTION : CONTROLE LE GAME OVER
     isGameOver : function(){
         let thisParty = cardGame.thisParty;
+        let playerBet = thisParty.player.bet;
+        let playerMoney = thisParty.player.money;
+        let dealerMoney = thisParty.dealer.money;
         let playerScore = thisParty.player.actualScore;
         let dealerScore = thisParty.dealer.actualScore;
         let winner = null;
         let looser = null;
-        
-        if (playerScore > 21){
+        let playerPrize = 0;
+        //debugger;
+        //Si le joueur a dépassé 21 OU un score inferieur au dealer il a perdu
+        if (playerScore > 21 || playerScore < dealerScore && dealerScore < 21){
             winner = thisParty.dealer;
             looser = thisParty.player;
-            thisParty.isGameOver = true;
-        } else if  (dealerScore > 21){
+            playerPrize = 0;
+            //Si le dealer a dépassé 21 && que le joueur n'a pas dépassé OU que le score du dealer est inferieur à celui du joueur le dealer a perdu
+        } else if (dealerScore > 21 && playerScore <= 21 || dealerScore < playerScore){
             winner = thisParty.player;
             looser = thisParty.dealer;
-            thisParty.isGameOver = true;
-        }      
-        if (thisParty.isGameOver === true){
-            console.log(`${looser.name} a dépassé les limites (${looser.actualScore}), c'est ${winner.name} qui remporte la partie!`);
+            //si le joueur a un blackjack il gagne pour un ratio de 3:2 (mise *(2+3)/2) ou indice 2.5
+            if (playerScore === 21){
+                playerPrize = (playerBet * 5)/2;
+                playerMoney += playerPrize;
+            } else {
+                //Si le joueur gagne simplement le casino verse 1:1 c'est a dire 2 fois sa mise dont sa mise de départ soit 2x sa mise
+                playerPrize = playerBet * 2;
+                playerMoney += playerPrize;
+                dealerMoney -= playerPrize;
+            }
+        } else {
+            //sinon égalité et aucun dépassement le joueur récupère sa mise
+            playerPrize = playerBet;
+            playerMoney += playerPrize;
+            dealerMoney -= playerPrize;
         }
+
+        let recette = playerPrize - playerBet;
+        console.log(`${looser.name} a perdu (${looser.actualScore}), c'est ${winner.name} qui remporte la partie!`);
+        console.log(`Il vous reste ${playerMoney}$ votre recette est de ${recette}$`);
+        playerBet = 0;
     },
 };
 
