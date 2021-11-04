@@ -1,4 +1,6 @@
 /**
+ * TODO : Gérer le blackjack (si 21 premier tirage) + 2 autres actions + quitter
+ *
  * OBJET JEUX DE CARTES
  */
 const cardGame = {
@@ -35,7 +37,7 @@ const cardGame = {
     newGame : function(){
         
 
-        console.log("Une nouvelle partie commence!")
+        console.log('Une nouvelle partie commence!');
         let thisParty = cardGame.thisParty;
         let player = thisParty.player;
         let dealer = thisParty.dealer;
@@ -48,15 +50,12 @@ const cardGame = {
         dealer.actualScore = 0;
         //Le joueur parie
         cardGame.playerBet();
-        //Le croupier distribue une carte face visible a chaque joueur et une pour lui à la fin
-        players.forEach(function(element){
-            cardGame.pickCard(1,element.cards,cardSet);
-        });  
-
-        // //Il tire une seconde carte visible pour chaque joueur et fini par une cachée pour lui
-        players.forEach(function(element){
-            cardGame.pickCard(1,element.cards,cardSet);
-        });
+        //Le croupier distribue une carte face visible a chaque joueur et une visible pour lui à la fin
+        cardGame.pickCard(1,thisParty.player.cards,cardSet,false);
+        cardGame.pickCard(1,thisParty.dealer.cards,cardSet,false);
+        cardGame.pickCard(1,thisParty.player.cards,cardSet,false);
+        cardGame.pickCard(1,thisParty.dealer.cards,cardSet);
+        //On 
         cardGame.calculateScore();
 
         // //Affichage des cartes tirées
@@ -109,7 +108,7 @@ const cardGame = {
             
                 //BOUCLE CARTE Boucle qui génère des valeurs de cartes sans couleur
                 for (let cardValue = 1 ; cardValue < 14; cardValue++){
-                    let thisCard = {color : thisColor ,value : cardValue, score : scoreValue(cardValue) };
+                    let thisCard = {color : thisColor ,value : cardValue, score : scoreValue(cardValue),hidden : true};
                     thisCardGame.push(thisCard);
                 }
                 //FIN DE LA BOUCLE JEUX DE CARTE
@@ -167,20 +166,22 @@ const cardGame = {
         
     },
     //FONCTION : PIOCHE UNE OU PLUSIEURS CARTE DANS UN JEU
-    pickCard : function(numberOfCard,personToGive,cardGameElt){
+    pickCard : function(numberOfCard,personToGive,cardGameElt,hidden){
         if (cardGame.thisParty.cardSet.length === 0){
-            this.createCardSet();
+            cardGame.createCardSet();
         }
         let thisCard = cardGameElt.splice(0,1);
-        //console.log('pickcard', personToGive);
+        if (hidden === false) {
+            thisCard[0].hidden = false;
+        } 
         personToGive.push(thisCard[0]);     
     },
     //FONCTION : Affichage d'une main
     displayHandOfCards : function(handOfCards){
         let cardsToShow = `${handOfCards.name}:`;
-        handOfCards.cards.forEach(function(element){
+        handOfCards.cards.forEach(function(thisCard){
             let thisValue = null;
-            switch (element.value){
+            switch (thisCard.value){
                 case 11 : 
                     thisValue = 'J';
                     break;
@@ -191,11 +192,15 @@ const cardGame = {
                     thisValue = 'K';
                     break;
                 default :
-                    thisValue = element.value;
+                    thisValue = thisCard.value;
                     break;
             
             }
-            cardsToShow += `${element.color}${thisValue}|`;          
+            if (thisCard.hidden === false){
+                cardsToShow += `${thisCard.color}${thisValue}|`;
+            } else {
+                cardsToShow += '[?]';
+            }          
         });
         cardsToShow += `(${handOfCards.actualScore})`;
         //Affiche Paris et argent restant
@@ -203,6 +208,14 @@ const cardGame = {
             cardsToShow += ` [Bet: ${cardGame.thisParty.player.bet}$ (Money : ${cardGame.thisParty.player.money})]`;
         }
         console.log(cardsToShow);
+    },
+    //FONCTION : Retourne une carte
+    toggleHiddenCard : function(thisCard){
+        if (thisCard.hidden === false){
+            thisCard.hidden = true;
+        } else {
+            thisCard.hidden = false;
+        }
     },
     //FONCTION : Calcule le score des deux mains actuelles et mets à jour les valeurs
     calculateScore : function(){
@@ -217,15 +230,14 @@ const cardGame = {
                 if (playerCard.score === 1 && (playerElt.actualScore + playerCard.score) < 21) {
                     playerCard.score = 11;
                 }
-                playerElt.actualScore += playerCard.score;
+                if (playerCard.hidden === false){
+                    playerElt.actualScore += playerCard.score;
+                }
                 
             });
         });
     },
-    //FONCTION : Calcule les gains du joueur
-    calculatePrize : function(){
-
-    },
+    //FONCTION : Propose au joueur de parier
     playerBet : function (){
         let playerBet = Number(prompt(`Combien voulez vous parier (Min :${cardGame.globalSettings.minBet}$, Max : ${cardGame.globalSettings.maxBet}$)?`));
         if(playerBet >= cardGame.globalSettings.minBet 
@@ -251,7 +263,7 @@ const cardGame = {
             switch (playerAction){
                 //Le joueur tire
                 case 1 : 
-                    cardGame.pickCard(1,player.cards,thisParty.cardSet);
+                    cardGame.pickCard(1,player.cards,thisParty.cardSet,false);
                     cardGame.calculateScore();  
                     cardGame.displayHandOfCards(player);
                     //Si son score n'a pas dépassé 21 il peut rejouer
@@ -273,7 +285,7 @@ const cardGame = {
        
     },
 
-    //A retravailler
+    //FONCTION : MECANIQUE DE JEU DU DEALER
     dealerTurn : function(){
         let thisParty = cardGame.thisParty;
         let dealer = thisParty.dealer;
@@ -282,8 +294,14 @@ const cardGame = {
         //     ||dealer.cards.length < 3 && dealer.cards[0] === 7 && dealer.cards[1] === 1){
         //     cardGame.isGameOver();
         //     return;
+        if (dealer.cards[1].hidden === true){
+            dealer.cards[1].hidden = false;
+            cardGame.calculateScore();  
+            cardGame.displayHandOfCards(dealer);
+        }
+
         if (dealer.actualScore <= 17){
-            cardGame.pickCard(1,dealer.cards,thisParty.cardSet);
+            cardGame.pickCard(1,dealer.cards,thisParty.cardSet,false);
             cardGame.calculateScore();  
             cardGame.displayHandOfCards(dealer);
             if (dealer.actualScore < 17) {
@@ -345,6 +363,7 @@ const cardGame = {
         }
         cardGame.newGame();
     },
+    //FONCTION : DIALOGUES
     dialogs : function(type,winner,looser,recette){
         switch(type){
             case 'winnerLooser' :
